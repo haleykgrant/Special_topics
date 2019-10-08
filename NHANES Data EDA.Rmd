@@ -74,7 +74,8 @@ dat <- bind_rows(
     (PAXINTEN %>% mutate(KEY = "count")),
     (PAXINTEN_log %>% mutate(KEY = "log")),
     (Flags %>% mutate(KEY = "flag"))
-)
+) %>%
+    filter(PAXCAL == 1 & PAXSTAT == 1)
 
 rm(PAXINTEN, Flags, PAXINTEN_log)
 
