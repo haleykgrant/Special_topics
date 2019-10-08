@@ -67,48 +67,83 @@ ggarrange(ggc1,ggd1,ggc2,ggd2 ,ncol = 2, nrow = 2, common.legend = T, legend = "
 PAXINTEN <- bind_rows(PAXINTEN_C, PAXINTEN_D)
 Flags    <- bind_rows(Flags_C, Flags_D)
 
-PAXINTEN_log <- bind_cols(PAXINTEN[, 1:5],
-                          log(PAXINTEN[, -c(1:5)] + 1))
+# PAXINTEN_log <- bind_cols(PAXINTEN[, 1:5],
+#                           log(PAXINTEN[, -c(1:5)] + 1))
+# 
+# tmp <- bind_rows(
+#     (PAXINTEN %>% mutate(KEY = "count")),
+#     (PAXINTEN_log %>% mutate(KEY = "log")),
+#     (Flags %>% mutate(KEY = "flag"))
+# ) %>%
+#     filter(PAXCAL == 1 & PAXSTAT == 1)
+# 
+# mean_column <- function(col_name, data) {
+#     tmp <- data %>% filter(KEY == col_name)
+#     sapply(1:7, function(i) {
+#         tmp2 <- tmp %>%
+#             filter(WEEKDAY == i) %>%
+#             select(-c(SEQN, PAXCAL, PAXSTAT, WEEKDAY, SDDSRVYR, KEY))
+#         colMeans(tmp2, na.rm = TRUE)
+#     }) %>%
+#         set_colnames(c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")) %>%
+#         as_tibble() %>%
+#         mutate(minute = 1:n()) %>%
+#         gather(key = "day", value = "value", -minute)
+# }
+# 
+# aves <- bind_rows(
+#     mean_column(col_name = "count", data = tmp) %>% mutate(key = "count"),
+#     mean_column(col_name = "log"  , data = tmp) %>% mutate(key = "log"),
+#     mean_column(col_name = "flag" , data = tmp) %>% mutate(key = "flag")
+# ) %>% 
+#     mutate(key = factor(key, 
+#                         levels = c("count", "log", "flag"),
+#                         labels = c("average activity count",
+#                                    "average log activity count",
+#                                    "fraction wearing device")))
+# 
+# aves %>%
+#     ggplot(aes(x = minute, y = value, colour = day)) +
+#     geom_line() +
+#     facet_grid(key ~ ., scales = "free_y") +
+#     theme_bw()
 
-dat <- bind_rows(
-    (PAXINTEN %>% mutate(KEY = "count")),
-    (PAXINTEN_log %>% mutate(KEY = "log")),
-    (Flags %>% mutate(KEY = "flag"))
-) %>%
-    filter(PAXCAL == 1 & PAXSTAT == 1)
-
-rm(PAXINTEN, Flags, PAXINTEN_log)
-
-mean_column <- function(col_name) {
-    tmp <- dat %>% filter(KEY == col_name)
-    sapply(1:7, function(i) {
-        tmp <- tmp %>%
-            filter(WEEKDAY == i) %>%
-            select(-c(SEQN, PAXCAL, PAXSTAT, WEEKDAY, SDDSRVYR, KEY))
-        colMeans(tmp, na.rm = TRUE)
-    }) %>%
-        set_colnames(c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")) %>%
-        as_tibble() %>%
-        mutate(minute = 1:n()) %>%
-        gather(key = "day", value = "value", -minute)
-}
-
-aves <- bind_rows(
-    mean_column("count") %>% mutate(key = "count"),
-    mean_column("log") %>% mutate(key = "log"),
-    mean_column("flag") %>% mutate(key = "flag")
-)
+```
 
 
-aves %>%
-    mutate(key = factor(key, 
-                        levels = c("count", "log", "flag"),
-                        labels = c("average activity count",
-                                   "average log activity count",
-                                   "fraction wearing device"))) %>%
-    ggplot(aes(x = minute, y = value, colour = day)) +
-    geom_line() +
-    facet_grid(key ~ ., scales = "free_y") +
-    theme_bw()
+```{r corrected average plot}
+# Flags_back <- Flags[, -c(1:5)]
+# 
+# PAX_deflagged <- bind_cols(
+#     PAXINTEN[, 1:5],
+#     PAXINTEN[, -c(1:5)] * (Flags_back[Flags_back == 0] <- NA)
+# )
+# 
+# PAX_deflagged_log <- bind_cols(PAX_deflagged[, 1:5],
+#                                log(PAX_deflagged[, -c(1:5)] + 1))
+# 
+# tmp <- bind_rows(
+#     (PAX_deflagged     %>% mutate(KEY = "count")),
+#     (PAX_deflagged_log %>% mutate(KEY = "log"))
+# ) %>%
+#     filter(PAXCAL == 1 & PAXSTAT == 1)
+# 
+# aves_deflagged <- bind_rows(
+#     mean_column(col_name = "count", data = tmp) %>% mutate(key = "count"),
+#     mean_column(col_name = "log"  , data = tmp) %>% mutate(key = "log")
+# ) %>%
+#     mutate(key = factor(key, 
+#                         levels = c("count", "log"),
+#                         labels = c("average activity count",
+#                                    "average log activity count")))
+# 
+# aves_deflagged %>%
+#     ggplot(aes(x = minute, y = value, colour = day)) +
+#     geom_line() +
+#     facet_grid(key ~ ., scales = "free_y") +
+#     theme_bw()
+```
+
+```{r scratchboard}
 
 ```
