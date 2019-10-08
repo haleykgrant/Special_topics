@@ -278,9 +278,10 @@ load(&quot;Covariate_C.rda&quot;)
 load(&quot;Covariate_D.rda&quot;)
 load(&quot;FLAGS_C.rda&quot;)
 load(&quot;FLAGS_D.rda&quot;)</code></pre>
+<p>PAXCAL and PAXSTAT are columns that show data reliability for each row. PAXCAL denotes the calibration of the device (1 if calibrated, 2 if not, and 9 if unknown). PAXSTAT denotes the data reliability status (1 if reliable, 2 if not).</p>
 <pre class="r"><code>#colnames(PAXINTEN_C)
 
-# View number of inadeequate rows
+# View number of inadequate rows
 ggc1 = ggplot(data = PAXINTEN_C, aes(x = PAXCAL))+geom_bar(aes(fill = PAXCAL==1),position = position_dodge(width = 0.8), width=0.5)+
   labs(title = &quot;PAXCAL: 2003-2004&quot;)+
   scale_fill_discrete(name = NULL,labels = c(&quot;Possibly Inaccurate&quot;,&quot;Adequate Data&quot;))+

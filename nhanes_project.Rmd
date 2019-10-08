@@ -28,7 +28,7 @@ load("FLAGS_D.rda")
 ```{r summary stats and basics}
 #colnames(PAXINTEN_C)
 
-# View number of inadeequate rows
+# View number of inadequate rows
 ggc1 = ggplot(data = PAXINTEN_C, aes(x = PAXCAL))+geom_bar(aes(fill = PAXCAL==1),position = position_dodge(width = 0.8), width=0.5)+
   labs(title = "PAXCAL Distribution in 2003-2004")+
   scale_fill_discrete(name = NULL,labels = c("Possibly Inaccurate","Adequate Data"))+
