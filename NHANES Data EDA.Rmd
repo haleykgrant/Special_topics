@@ -19,6 +19,8 @@ library(ggplot2)
 library(ggpubr)
 library(dplyr)
 library(tidyr)
+library(tidyverse)
+library(magrittr)
 
 load("PAXINTEN_C.rda")
 load("PAXINTEN_D.rda")
@@ -38,23 +40,74 @@ PAXCAL and PAXSTAT are columns that show data reliability for each row. PAXCAL d
 # View number of inadequate rows
 ggc1 = ggplot(data = PAXINTEN_C, aes(x = PAXCAL))+geom_bar(aes(fill = PAXCAL==1),position = position_dodge(width = 0.8), width=0.5)+
   labs(title = "PAXCAL: 2003-2004")+
-  scale_fill_discrete(name = NULL,labels = c("Possibly Inaccurate","Adequate Data"))+
+  scale_fill_discrete(name = NULL,labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 ggc2 = ggplot(data = PAXINTEN_C, aes(x = PAXSTAT))+geom_bar(aes(fill = PAXSTAT==1),position = position_dodge(width = 0.8), width=0.5)+
   labs(title = "PAXSTAT: 2003-2004")+
-  scale_fill_discrete(name = NULL,labels = c("Possibly Inaccurate","Adequate Data"))+
+  scale_fill_discrete(name = NULL,labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 ggd1 = ggplot(data = PAXINTEN_D, aes(x = PAXCAL))+geom_bar(aes(fill = PAXCAL==1),position = position_dodge(width = 0.8), width=0.5)+
   labs(title = "PAXCAL: 2005-2006")+
-  scale_fill_discrete(name = NULL,labels = c("Possibly Inaccurate","Adequate Data"))+
+  scale_fill_discrete(name = NULL,labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 ggd2 = ggplot(data = PAXINTEN_D, aes(x = PAXSTAT))+geom_bar(aes(fill = PAXSTAT==1),position = position_dodge(width = 0.8), width=0.5)+
   labs(title = "PAXSTAT: 2005-2006")+
-  scale_fill_discrete(name = NULL, labels = c( "Possibly Inaccurate","Adequate Data"))+
+  scale_fill_discrete(name = NULL, labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 
 ggarrange(ggc1,ggd1,ggc2,ggd2 ,ncol = 2, nrow = 2, common.legend = T, legend = "bottom")
 
 
+
+```
+
+
+
+```{r average plot}
+PAXINTEN <- bind_rows(PAXINTEN_C, PAXINTEN_D)
+Flags    <- bind_rows(Flags_C, Flags_D)
+
+PAXINTEN_log <- bind_cols(PAXINTEN[, 1:5],
+                          log(PAXINTEN[, -c(1:5)] + 1))
+
+dat <- bind_rows(
+    (PAXINTEN %>% mutate(KEY = "count")),
+    (PAXINTEN_log %>% mutate(KEY = "log")),
+    (Flags %>% mutate(KEY = "flag"))
+)
+
+rm(PAXINTEN, Flags, PAXINTEN_log)
+
+mean_column <- function(col_name) {
+    tmp <- dat %>% filter(KEY == col_name)
+    sapply(1:7, function(i) {
+        tmp <- tmp %>%
+            filter(WEEKDAY == i) %>%
+            select(-c(SEQN, PAXCAL, PAXSTAT, WEEKDAY, SDDSRVYR, KEY))
+        colMeans(tmp, na.rm = TRUE)
+    }) %>%
+        set_colnames(c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")) %>%
+        as_tibble() %>%
+        mutate(minute = 1:n()) %>%
+        gather(key = "day", value = "value", -minute)
+}
+
+aves <- bind_rows(
+    mean_column("count") %>% mutate(key = "count"),
+    mean_column("log") %>% mutate(key = "log"),
+    mean_column("flag") %>% mutate(key = "flag")
+)
+
+
+aves %>%
+    mutate(key = factor(key, 
+                        levels = c("count", "log", "flag"),
+                        labels = c("average activity count",
+                                   "average log activity count",
+                                   "fraction wearing device"))) %>%
+    ggplot(aes(x = minute, y = value, colour = day)) +
+    geom_line() +
+    facet_grid(key ~ ., scales = "free_y") +
+    theme_bw()
 
 ```
