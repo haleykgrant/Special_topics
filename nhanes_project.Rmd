@@ -18,6 +18,8 @@ load("PAXINTEN_C.rda")
 load("PAXINTEN_D.rda")
 load("Covariate_C.rda")
 load("Covariate_D.rda")
+load("FLAGS_C.rda")
+load("FLAGS_D.rda")
 
 ```
 
@@ -64,6 +66,28 @@ gg =ggplot(data = x, aes(x = time, y = val ))+geom_path(size = 0.5)+
   scale_x_continuous(breaks = seq(0, max(x$time), by = 120))
   
 gg
+
+dat = rbind(PAXINTEN_C,PAXINTEN_D)
+
+wkdy = dat[which(dat$WEEKDAY%in% c(2:6)),]
+wknd = dat[which(dat$WEEKDAY%in% c(1,7)),]
+
+x1 = data.frame(apply(wkdy[,c(6:1445)], 2, mn.na))
+colnames(x1) = "val"
+x1$time = as.numeric(substr(rownames(x1),4,stop = nchar(rownames(x1))))
+
+x2 = data.frame(apply(wknd[,c(6:1445)], 2, mn.na))
+colnames(x2) = "val"
+x2$time = as.numeric(substr(rownames(x2),4,stop = nchar(rownames(x2))))
+
+
+gg1 =ggplot(data = x1, aes(x = time, y = val ))+geom_path(size = 0.5)+
+  labs(y = "Average Activity Count")+
+  scale_x_continuous(breaks = seq(0, max(x$time), by = 120))
+  
+gg2 =ggplot(data = x2, aes(x = time, y = val ))+geom_path(size = 0.5)+
+  labs(y = "Average Activity Count")+
+  scale_x_continuous(breaks = seq(0, max(x$time), by = 120))
 
 
 ```
