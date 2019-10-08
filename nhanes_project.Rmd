@@ -7,7 +7,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, message = FALSE}
 library(rnhanesdata)
 library(ggplot2)
 library(ggpubr)
@@ -57,15 +57,6 @@ ggarrange(ggc2,ggd2, ncol = 2, common.legend = T, legend = "bottom")
 mn.na = function(var) {
   return(mean(var, na.rm = T))
 }
-x = data.frame(apply(PAXINTEN_C[,c(6:1445)], 2, mn.na))
-colnames(x) = "val"
-x$time = as.numeric(substr(rownames(x),4,stop = nchar(rownames(x))))
-
-gg =ggplot(data = x, aes(x = time, y = val ))+geom_path(size = 0.5)+
-  labs(y = "Average Activity Count")+
-  scale_x_continuous(breaks = seq(0, max(x$time), by = 120))
-  
-gg
 
 dat = rbind(PAXINTEN_C,PAXINTEN_D)
 
@@ -83,11 +74,54 @@ x2$time = as.numeric(substr(rownames(x2),4,stop = nchar(rownames(x2))))
 
 gg1 =ggplot(data = x1, aes(x = time, y = val ))+geom_path(size = 0.5)+
   labs(y = "Average Activity Count")+
-  scale_x_continuous(breaks = seq(0, max(x$time), by = 120))
+  scale_x_continuous(breaks = seq(0, max(x1$time), by = 120))
   
 gg2 =ggplot(data = x2, aes(x = time, y = val ))+geom_path(size = 0.5)+
   labs(y = "Average Activity Count")+
-  scale_x_continuous(breaks = seq(0, max(x$time), by = 120))
+  scale_x_continuous(breaks = seq(0, max(x2$time), by = 120))
+
+gg1 
+gg2
+```
+
+
+```{r}
+wkdy2 = dat[which(dat$WEEKDAY%in% c(1:6)),]
+wkdy2[which(wkdy2$WEEKDAY==1),c(6:1145)]=NA
+wkdy2[which(wkdy2$WEEKDAY==6),c(1146:1445)]=NA
+
+wknd2 = dat[which(dat$WEEKDAY%in% c(1,6:7)),]
+wknd2[which(wknd2$WEEKDAY==1),c(1146:1445)]=NA
+wknd2[which(wknd2$WEEKDAY==6),c(6:1145)]=NA
+
+
+
+w1 = data.frame(apply(wkdy2[,c(6:1445)], 2, mn.na))
+colnames(w1) = "val"
+w1$time = as.numeric(substr(rownames(w1),4,stop = nchar(rownames(w1))))
+
+w2 = data.frame(apply(wknd2[,c(6:1445)], 2, mn.na))
+colnames(w2) = "val"
+w2$time = as.numeric(substr(rownames(w2),4,stop = nchar(rownames(w2))))
+
+
+gg1 =ggplot(data = w1, aes(x = time, y = val ))+geom_path(size = 0.5)+
+  labs(y = "Average Activity Count")+
+  scale_x_continuous(breaks = seq(0, max(w1$time), by = 120))
+  
+gg2 =ggplot(data = w2, aes(x = time, y = val ))+geom_path(size = 0.5)+
+  labs(y = "Average Activity Count")+
+  scale_x_continuous(breaks = seq(0, max(w2$time), by = 120))
+
+gg1 
+gg2
+```
+
+```{r}
+flags = rbind(Flags_C,Flags_D)
+
+
+
 
 
 ```
