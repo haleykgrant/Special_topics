@@ -68,7 +68,18 @@ PAXINTEN     <- bind_rows(PAXINTEN_C, PAXINTEN_D)
 PAXINTEN_log <- bind_cols(PAXINTEN[, 1:5], log(PAXINTEN[, -c(1:5)] + 1))
 Flags        <- bind_rows(Flags_C, Flags_D)
 
-
+mean_column <- function(col_name, data) {
+    sapply(1:7, function(i) {
+        tmp <- data %>%
+            filter(WEEKDAY == i) %>%
+            select(-c(SEQN, PAXCAL, PAXSTAT, WEEKDAY, SDDSRVYR))
+        colMeans(tmp, na.rm = TRUE)
+    }) %>%
+        set_colnames(c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")) %>%
+        as_tibble() %>%
+        mutate(minute = 1:n()) %>%
+        gather(key = "day", value = "value", -minute)
+}
 
 bind_rows(
     mean_column(col_name = "count", data = PAXINTEN)     %>% mutate(key = "count"),
@@ -104,18 +115,6 @@ rm(PAX_front, PAX_back)
 
 PAX_clean_log <- bind_cols(PAX_clean[, 1:5], log(PAX_clean[, -c(1:5)] + 1))
 
-mean_column <- function(col_name, data) {
-    sapply(1:7, function(i) {
-        tmp <- data %>%
-            filter(WEEKDAY == i) %>%
-            select(-c(SEQN, PAXCAL, PAXSTAT, WEEKDAY, SDDSRVYR))
-        colMeans(tmp, na.rm = TRUE)
-    }) %>%
-        set_colnames(c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")) %>%
-        as_tibble() %>%
-        mutate(minute = 1:n()) %>%
-        gather(key = "day", value = "value", -minute)
-}
 
 bind_rows(
     mean_column(col_name = "count", data = PAX_clean)     %>% mutate(key = "count"),

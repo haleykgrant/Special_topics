@@ -390,18 +390,6 @@ rm(PAX_front, PAX_back)
 
 PAX_clean_log &lt;- bind_cols(PAX_clean[, 1:5], log(PAX_clean[, -c(1:5)] + 1))
 
-mean_column &lt;- function(col_name, data) {
-    sapply(1:7, function(i) {
-        tmp &lt;- data %&gt;%
-            filter(WEEKDAY == i) %&gt;%
-            select(-c(SEQN, PAXCAL, PAXSTAT, WEEKDAY, SDDSRVYR))
-        colMeans(tmp, na.rm = TRUE)
-    }) %&gt;%
-        set_colnames(c(&quot;Sun&quot;, &quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;)) %&gt;%
-        as_tibble() %&gt;%
-        mutate(minute = 1:n()) %&gt;%
-        gather(key = &quot;day&quot;, value = &quot;value&quot;, -minute)
-}
 
 bind_rows(
     mean_column(col_name = &quot;count&quot;, data = PAX_clean)     %&gt;% mutate(key = &quot;count&quot;),
