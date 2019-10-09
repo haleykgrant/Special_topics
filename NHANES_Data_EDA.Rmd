@@ -31,6 +31,7 @@ load("FLAGS_D.rda")
 
 ```
 
+### Data Reliability 
 
 PAXCAL and PAXSTAT are columns that show data reliability for each row. PAXCAL denotes the calibration of the device (1 if calibrated, 2 if not, and 9 if unknown). PAXSTAT denotes the data reliability status (1 if reliable, 2 if not).
 
@@ -61,7 +62,7 @@ ggarrange(ggc1,ggd1,ggc2,ggd2 ,ncol = 2, nrow = 2, common.legend = T, legend = "
 
 ```
 
-
+### Average activity counts over time
 
 ```{r average_plot}
 PAXINTEN     <- bind_rows(PAXINTEN_C, PAXINTEN_D)
@@ -98,7 +99,7 @@ bind_rows(
 
 ```
 
-
+### Removing non-wear timepoints 
 ```{r cleaned_average_plot}
 PAX       <- bind_rows(PAXINTEN_C, PAXINTEN_D) %>% filter(PAXCAL==1 & PAXSTAT==1)
 Flags_mat <- bind_rows(Flags_C, Flags_D) %>% filter(PAXCAL==1 & PAXSTAT==1)
@@ -127,3 +128,30 @@ bind_rows(
     labs(y = "average value")
 ```
 
+
+### Drinking Status
+```{r}
+demog = bind_rows(Covariate_C,Covariate_D)%>% filter()
+
+pat.id.del = unique(c(PAXINTEN_C$SEQN[PAXINTEN_C$PAXCAL!=1], PAXINTEN_C$SEQN[PAXINTEN_C$PAXSTAT!=1], PAXINTEN_D$SEQN[PAXINTEN_C$PAXCAL!=1],PAXINTEN_D$SEQN[PAXINTEN_C$PAXSTAT!=1]))
+
+demog = filter(demog, !(SEQN %in% pat.id.del))
+
+hv.drnk = demog$SEQN[demog$DrinkStatus=="Heavy Drinker"]
+mod.drnk = demog$SEQN[demog$DrinkStatus=="Moderate Drinker"]
+non.drnk = demog$SEQN[demog$DrinkStatus=="Non-Drinker"]
+
+
+bind_rows(
+    mean_column(col_name = "count", data = PAX_clean%>% filter(SEQN %in% non.drnk))%>% mutate(key = "non drinkers"),
+     mean_column(col_name = "count", data = PAX_clean%>% filter(SEQN %in% mod.drnk))%>% mutate(key = "moderate drinkers"), 
+    mean_column(col_name = "count", data = PAX_clean%>% filter(SEQN %in% hv.drnk))%>% mutate(key = " heavy drinkers")
+) %>%
+    ggplot(aes(x = minute, y = value, color = day)) +
+    geom_line(alpha = 0.6) +
+    facet_grid(key ~ ., scales = "free_y") +
+    theme_bw() +
+    labs(y = "average value")
+
+
+```

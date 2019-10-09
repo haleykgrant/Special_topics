@@ -13,6 +13,8 @@ library(ggplot2)
 library(ggpubr)
 library(dplyr)
 library(tidyr)
+library(tidyverse)
+library(magrittr)
 
 load("PAXINTEN_C.rda")
 load("PAXINTEN_D.rda")
@@ -24,106 +26,127 @@ load("FLAGS_D.rda")
 ```
 
 
+PAXCAL and PAXSTAT are columns that show data reliability for each row. PAXCAL denotes the calibration of the device (1 if calibrated, 2 if not, and 9 if unknown). PAXSTAT denotes the data reliability status (1 if reliable, 2 if not).
 
 ```{r summary stats and basics}
 #colnames(PAXINTEN_C)
 
 # View number of inadequate rows
 ggc1 = ggplot(data = PAXINTEN_C, aes(x = PAXCAL))+geom_bar(aes(fill = PAXCAL==1),position = position_dodge(width = 0.8), width=0.5)+
-  labs(title = "PAXCAL Distribution in 2003-2004")+
-  scale_fill_discrete(name = NULL,labels = c("Possibly Inaccurate","Adequate Data"))+
+  labs(title = "PAXCAL: 2003-2004")+
+  scale_fill_discrete(name = NULL,labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 ggc2 = ggplot(data = PAXINTEN_C, aes(x = PAXSTAT))+geom_bar(aes(fill = PAXSTAT==1),position = position_dodge(width = 0.8), width=0.5)+
-  labs(title = "PAXSTAT Distribution in 2003-2004")+
-  scale_fill_discrete(name = NULL,labels = c("Possibly Inaccurate","Adequate Data"))+
+  labs(title = "PAXSTAT: 2003-2004")+
+  scale_fill_discrete(name = NULL,labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 ggd1 = ggplot(data = PAXINTEN_D, aes(x = PAXCAL))+geom_bar(aes(fill = PAXCAL==1),position = position_dodge(width = 0.8), width=0.5)+
-  labs(title = "PAXCAL Distribution in 2005-2006")+
-  scale_fill_discrete(name = NULL,labels = c("Possibly Inaccurate","Adequate Data"))+
+  labs(title = "PAXCAL: 2005-2006")+
+  scale_fill_discrete(name = NULL,labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 ggd2 = ggplot(data = PAXINTEN_D, aes(x = PAXSTAT))+geom_bar(aes(fill = PAXSTAT==1),position = position_dodge(width = 0.8), width=0.5)+
-  labs(title = "PAXSTAT Distribution in 2005-2006")+
-  scale_fill_discrete(name = NULL, labels = c( "Possibly Inaccurate","Adequate Data"))+
+  labs(title = "PAXSTAT: 2005-2006")+
+  scale_fill_discrete(name = NULL, labels = c("Unreliable Data","Reliable Data"))+
   theme_bw()
 
-ggarrange(ggc1,ggd1, ncol = 2,common.legend = T, legend = "bottom")
-ggarrange(ggc2,ggd2, ncol = 2, common.legend = T, legend = "bottom")
+ggarrange(ggc1,ggd1,ggc2,ggd2 ,ncol = 2, nrow = 2, common.legend = T, legend = "bottom")
+
 
 
 ```
 
 
-```{r}
-mn.na = function(var) {
-  return(mean(var, na.rm = T))
+
+```{r average_plot}
+PAXINTEN     <- bind_rows(PAXINTEN_C, PAXINTEN_D)
+PAXINTEN_log <- bind_cols(PAXINTEN[, 1:5], log(PAXINTEN[, -c(1:5)] + 1))
+Flags        <- bind_rows(Flags_C, Flags_D)
+
+mean_column <- function(col_name, data) {
+    sapply(1:7, function(i) {
+        tmp <- data %>%
+            filter(WEEKDAY == i) %>%
+            select(-c(SEQN, PAXCAL, PAXSTAT, WEEKDAY, SDDSRVYR))
+        colMeans(tmp, na.rm = TRUE)
+    }) %>%
+        set_colnames(c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")) %>%
+        as_tibble() %>%
+        mutate(minute = 1:n()) %>%
+        gather(key = "day", value = "value", -minute)
 }
 
-dat = rbind(PAXINTEN_C,PAXINTEN_D)
+bind_rows(
+    mean_column(col_name = "count", data = PAXINTEN)     %>% mutate(key = "count"),
+    mean_column(col_name = "log"  , data = PAXINTEN_log) %>% mutate(key = "log"),
+    mean_column(col_name = "flag" , data = Flags)        %>% mutate(key = "flag")
+) %>%
+    mutate(key = factor(key,
+                        levels = c("count", "log", "flag"),
+                        labels = c("average count",
+                                   "average log count",
+                                   "fraction wearing device"))) %>%
+    ggplot(aes(x = minute, y = value, colour = day)) +
+    geom_line() +
+    facet_grid(key ~ ., scales = "free_y") +
+    theme_bw()
 
-wkdy = dat[which(dat$WEEKDAY%in% c(2:6)),]
-wknd = dat[which(dat$WEEKDAY%in% c(1,7)),]
-
-x1 = data.frame(apply(wkdy[,c(6:1445)], 2, mn.na))
-colnames(x1) = "val"
-x1$time = as.numeric(substr(rownames(x1),4,stop = nchar(rownames(x1))))
-
-x2 = data.frame(apply(wknd[,c(6:1445)], 2, mn.na))
-colnames(x2) = "val"
-x2$time = as.numeric(substr(rownames(x2),4,stop = nchar(rownames(x2))))
+```
 
 
-gg1 =ggplot(data = x1, aes(x = time, y = val ))+geom_path(size = 0.5)+
-  labs(y = "Average Activity Count")+
-  scale_x_continuous(breaks = seq(0, max(x1$time), by = 120))
-  
-gg2 =ggplot(data = x2, aes(x = time, y = val ))+geom_path(size = 0.5)+
-  labs(y = "Average Activity Count")+
-  scale_x_continuous(breaks = seq(0, max(x2$time), by = 120))
+```{r cleaned_average_plot}
+PAX       <- bind_rows(PAXINTEN_C, PAXINTEN_D) %>% filter(PAXCAL==1 & PAXSTAT==1)
+Flags_mat <- bind_rows(Flags_C, Flags_D) %>% filter(PAXCAL==1 & PAXSTAT==1)
+PAX_front <- PAX[, 1:5]
+PAX_back  <- PAX[, -c(1:5)]
+rm(PAX)
 
-gg1 
-gg2
+Flags_mat <- Flags_mat[, -c(1:5)]
+PAX_back[Flags_mat==0] <- NA
+rm(Flags_mat)
+
+PAX_clean <- bind_cols(PAX_front, PAX_back)
+rm(PAX_front, PAX_back)
+
+PAX_clean_log <- bind_cols(PAX_clean[, 1:5], log(PAX_clean[, -c(1:5)] + 1))
+
+
+bind_rows(
+    mean_column(col_name = "count", data = PAX_clean)     %>% mutate(key = "count"),
+    mean_column(col_name = "log"  , data = PAX_clean_log) %>% mutate(key = "log count")
+) %>%
+    ggplot(aes(x = minute, y = value, color = day)) +
+    geom_line() +
+    facet_grid(key ~ ., scales = "free_y") +
+    theme_bw() +
+    labs(y = "average value")
 ```
 
 
 ```{r}
-wkdy2 = dat[which(dat$WEEKDAY%in% c(1:6)),]
-wkdy2[which(wkdy2$WEEKDAY==1),c(6:1145)]=NA
-wkdy2[which(wkdy2$WEEKDAY==6),c(1146:1445)]=NA
+demog = bind_rows(Covariate_C,Covariate_D)%>% filter()
 
-wknd2 = dat[which(dat$WEEKDAY%in% c(1,6:7)),]
-wknd2[which(wknd2$WEEKDAY==1),c(1146:1445)]=NA
-wknd2[which(wknd2$WEEKDAY==6),c(6:1145)]=NA
+pat.id.del = unique(c(PAXINTEN_C$SEQN[PAXINTEN_C$PAXCAL!=1], PAXINTEN_C$SEQN[PAXINTEN_C$PAXSTAT!=1], PAXINTEN_D$SEQN[PAXINTEN_C$PAXCAL!=1],PAXINTEN_D$SEQN[PAXINTEN_C$PAXSTAT!=1]))
 
+demog = filter(demog, !(SEQN %in% pat.id.del))
 
-
-w1 = data.frame(apply(wkdy2[,c(6:1445)], 2, mn.na))
-colnames(w1) = "val"
-w1$time = as.numeric(substr(rownames(w1),4,stop = nchar(rownames(w1))))
-
-w2 = data.frame(apply(wknd2[,c(6:1445)], 2, mn.na))
-colnames(w2) = "val"
-w2$time = as.numeric(substr(rownames(w2),4,stop = nchar(rownames(w2))))
+hv.drnk = demog$SEQN[demog$DrinkStatus=="Heavy Drinker"]
+mod.drnk = demog$SEQN[demog$DrinkStatus=="Moderate Drinker"]
+non.drnk = demog$SEQN[demog$DrinkStatus=="Non-Drinker"]
 
 
-gg1 =ggplot(data = w1, aes(x = time, y = val ))+geom_path(size = 0.5)+
-  labs(y = "Average Activity Count")+
-  scale_x_continuous(breaks = seq(0, max(w1$time), by = 120))
-  
-gg2 =ggplot(data = w2, aes(x = time, y = val ))+geom_path(size = 0.5)+
-  labs(y = "Average Activity Count")+
-  scale_x_continuous(breaks = seq(0, max(w2$time), by = 120))
-
-gg1 
-gg2
-```
-
-```{r}
-flags = rbind(Flags_C,Flags_D)
-
-
-
+bind_rows(
+    mean_column(col_name = "count", data = PAX_clean%>% filter(SEQN %in% non.drnk))%>% mutate(key = "non drinkers"),
+     mean_column(col_name = "count", data = PAX_clean%>% filter(SEQN %in% mod.drnk))%>% mutate(key = "moderate drinkers"), 
+    mean_column(col_name = "count", data = PAX_clean%>% filter(SEQN %in% hv.drnk))%>% mutate(key = " heavy drinkers")
+) %>%
+    ggplot(aes(x = minute, y = value, color = day)) +
+    geom_line(alpha = 0.6) +
+    facet_grid(key ~ ., scales = "free_y") +
+    theme_bw() +
+    labs(y = "average value")
 
 
 ```
 
+```
 
